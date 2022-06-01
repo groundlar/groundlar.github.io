@@ -1,11 +1,11 @@
 title: Groundlar
-email: your-email@example.com
 description: Maybe one day I'll be articulate enough to write a blog.
 domain: skycook.github.io
 url: https://skycook.github.io
 
 # Build settings
-theme: jekyll-theme-minimal
+#theme: jekyll-theme-minimal
+theme: minima
 plugins:
   - jekyll-feed
 

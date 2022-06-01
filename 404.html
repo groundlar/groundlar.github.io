@@ -18,8 +18,11 @@ layout: default
 </style>
 
 <div class="container">
-  <h1>404</h1>
-
-  <p><strong>Page not found :(</strong></p>
-  <p>The requested page could not be found.</p>
+  <img src={{ site.url }}/assets/img/404_not_found.jpg>
+  <h1>:(</h1>
+  <script>
+    setTimeout(function() {
+      window.location.replace("https://skycook.github.io/");
+    }, 1000);
+  </script>
 </div>
