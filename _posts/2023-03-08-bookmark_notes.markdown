@@ -64,6 +64,62 @@ Performance is an aspect of system mastery (like SRE/DevOps/Observability), an i
 
 
 
+## [What Is ChatGPT Doing... and Why Does It Work?](https://writings.stephenwolfram.com/2023/02/what-is-chatgpt-doing-and-why-does-it-work/)
+- Probabilistically adds one token (word or part of word) at a time, by attempting to "match in meaning".
+  - Not always the "highest-ranked" word, randomness for interest (controlled by empirical temperature parameter).
+- Training corpus looks at n-gram word probabilities, but this naive approach doesn't get close enough with existing (100M books) data
+  - LLM tries to estimate probabilities of longer sequences.
+- Explanation of basic curve fitting and ML models like NNs
+  - Neural nets and ML models are empirically derived models
+    - There's no way to "prove" they work without understanding the underlying phenomenon (e.g. image recognition or prose writing)
+  - NN classification analogy to high-dimensional Voronoi diagram, Wolfram terms these "attractors"
+  - NNs may use image "features" at each layer (e.g. edges or outlines) but typically not the ones humans would communicate
+  - NN training is largely empirical art with some retrospective explanations
+    - Empircally end-to-end applications seem to work better than chaining specialized smaller networks
+  - Training ML models takes a lot of data.
+  - ChatGPT uses unsupervised learning by occluding text in the source material and predicting the missing text.
+- Learning and computational irreducibility
+  - Learning involves compressing data by leveraging regularities, irreducibility implies there's a limit to these regularities.
+  - The more trainable a system is, the less sophisticated is computation.
+  - The fact that we can train computers to do this doesn't mean they've suddenly gotten more powerful, but rather that human behaviors might be less computationally difficult than we thought.
+- Embeddings reduce inputs (e.g. words, pictures) to vectors.
+- CNNs exploit structure (in e.g. images) to prune connections (e.g. connect to nearby pixel neurons)
+- Transformers try to do something similar for sequences of tokens in a piece of text
+  - They "pay more attention" to some parts of the sequence
+- ChatGPT has three stages
+  - Represent previously-generated tokens ("words") as an embedding
+  - Run this embedding through its NN model to produce a new embedding
+  - Use that embedding to generate probabilities for the next token (~50k probabilities)
+  - (All of these are learned inside the NN)
+- Step 2 has many "attention blocks" comprised of "attention heads" which operate independently on chunks of values in the embedding vector.
+  - Why? It works. (TM)
+  - Looking at various chunks allows the model to represent relationships between different areas of the generated text.
+- NN has 175B connections! (Human brain may have 100B neurons and ~100T synapses)
+  - It's interesting that training data size (words) is comparable to the number of model weights (connections).
+- After raw training on text, human feedback was introduced.
+  - Another NN was trained on human feedback to predict rating results.
+  - This can be used like a loss function to train the original.
+- Because we can train a model of this size to produce such good results, human language might be less complicated than we thought.
+  - This might imply new "laws of language" or "thought" are yet to be discovered.
+  - Unfortunately we can't explain ChatGPT so these aren't obvious/easy to find.
+- Grammatical rules define how words can be put together in to "parse trees"
+  - ChatGPT implicitly "discovers" these during training.
+  - Example with parenthesis language, potentially "too precise" of algorithm to model (irreducible).
+  - (Me) This might have implications for the size of model needed for larger composition (e.g. tying together/referencing concepts across longer inputs)
+  - Analogies to boolean logic reducibility to NAND
+- Projecting ChatGPT vectors to 2D shows groupings of semantically similar words, subgroups correspond to different meanings.
+- Is there additional structure?
+  - Kind of. If you squint, there may be shapes correspoding to analogies
+  - Generative trajectories (at 0 temperature) don't immediately look like patterns/laws. But we might be looking at the wrong variables/coordinate system.
+- Syntax is easier than semantics, but even semantically sane sentences can be nonsensical in context ("The elephant traveled to the moon").
+  - Eventually need "world-level" context
+  - Human language is imprecise due to social contracts and context between users
+- Wolfram sees an analogy between semantic grammar and syllogistic logic, is excited about building a computational language framework for the former.
+- ChatGPT still fundamentally limited by
+   - the architecture of NNs (probably learning is very different in humans)
+   - lack of computational capability (e.g. algorithmic computation analogs like "loops" or "recompute")
+   - speed of training prevents adding these naively
+
 
 
 
