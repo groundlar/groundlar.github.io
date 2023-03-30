@@ -14,7 +14,7 @@ categories: jekyll default
   - Idea that humans can only perceive and reason about decomposable systems, posit that the universe is not like this.
 
 # [Part 1.2 -- What is a category?](https://www.youtube.com/watch?v=p54Hd7AmVFU&list=PLbgaMIhjbmEnaH_LTkxLI7FMa2HsnawM_&index=2)
-###Abstraction, Compoability, Identity
+### Abstraction, Composability, Identity
   - Category is a bunch of objects, can think of it as a more general set or a (potentially infinite) graph
     - Objects and Morphisms are primitives
     - Morphisms (analogous to functions) go from one object to another
