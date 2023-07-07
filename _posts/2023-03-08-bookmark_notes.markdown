@@ -123,3 +123,236 @@ Performance is an aspect of system mastery (like SRE/DevOps/Observability), an i
 
 
 
+# [How To Do Hard Things (Acceptance and Commitment Therapy)](https://every.to/no-small-plans/how-to-do-hard-things)
+- ACT is research backed, but isolated to therapy circles.
+- Focuses on 6 core processes to cultivate psychological flexibility in the face of avoidance behaviors (inflexibility)
+  - Experiential Avoidance -> Willingness
+  - Fusion -> Defusion
+  - Past/Future -> Present-Moment Awareness
+  - Rigid Stores -> Flexible Perspective-Taking
+  - Lack of Direction -> Clear Values
+  - Inaction -> Committed Action
+
+## Experiential Avoidance -> Willingness
+Avoidance may be a "reverse compass," for identifying growth tasks--within reason.
+Play to your strengths, but sometime you have to cultivate new ones.
+
+Practice: sit and allow difficult thoughts and feelings to be present, open up to them as part of the path to your goals.
+"What are you unwilling to feel?"
+
+## Fusion -> Defusion
+When "fused" to your thoughts, you react to them as if thy were objective, external reality.
+
+- Reasons (I can't do X because Y)
+- Judgements (People are only looking out for themselves)
+- Rules (I shouldn't feel Z / I have to work harder than others)
+
+These are simply thoughts, we can choose to pay attention to the "workable" ones moving us towards our goals.
+
+E.g. "mistakes are bad" rule, often stems from school where you're taught the correct answers ahead of time and simply have to recall.
+Real life doesn't work this way. Things are challenging an uncertain, can be difficult ot enjoy work/life if you think you're always doing something wrong.
+
+Practice: Silly example--wave your hand about while saying "I'm not waving my hand back and forth." Thoughts and statements are fallible.
+
+## Past/Future -> Present-Moment Awareness
+Fear of the future (e.g. future problems like running out of money or uncertain outcomes) can consume your thoughts.
+Obviously planning and recall are important, but there are diminishing returns.
+
+Rumination and worrying aren't reality: they're cogitation in the present moment. Treat them as such.
+
+Practice: pause and focus only on the information from your five senses, doesn't have to be meditation (but could be). Can eventually observe arising thoughts and emotions.
+
+## Rigid Stores -> Flexible Perspective-Taking
+Often interpersonal perceptions: "they are so irrational" or "misinformed". People are complex.
+
+We do this to ourselves too (e.g. imposter syndrome), these narratives are limiting and oversimplifications.
+
+Any story we tell about anyone, good or bad, is just a facet from a particular context. Sense of self should transcend the sum of experiences and history.
+
+Practice: notice when we're caricaturing ourselves or others, put yourself in their shoes.
+
+## Lack of Direction -> Clear Values
+Aimlessness in the present may be an indication of avoidance or fusion, so start there.
+
+Reconnect day-to-day with the things that matter most to us. Clarify to yourself what a well-lived-life looks like.
+E.g. "love" and "play" for the author.
+
+These aren't discrete goals, rather meaningful _ways of being_ which give meaning to acts in our lives.
+
+
+Practice: Memento mori--death and mortality can provide focus for finding these. 
+What do you want your tombstone to say?
+What would it say if you died in your sleep tonight?
+
+## Inaction -> Committed Action
+You gotta effect change from the above.
+
+7 "R"s: Reminders, Records, Rewards, Routines, Relationships, Reflecting, Restructuring. Provide a scaffolding for new behaviors until they're self-reinforcing.
+
+There are no "right" or "wrong" behaviors, nor steps too small--anything done in service of your values is a step towards building a life that matters to you.
+
+Practice: What small behavioral shift could I make in service of moving toward what matters in my life? And how might I support it with the scaffolding above?
+
+
+# [The age of average](https://www.alexmurrell.co.uk/articles/the-age-of-average)
+Two artists hire market research firm to survey American art taste, ended up painting some very average and samey pieces.
+Author posits that this averaging rules our current world, resulting in convention and cliche.
+
+Examples:
+
+- Airbnb and coffee shop styling
+  - Look at a photo and try to say which global city they're in. Spoiler: you can't.
+- Architecture
+  - A "non-place" is a place defined by transience and anonymity.
+  - City skylines are converging, driven by function & efficiency
+  - Cheap stick framing and mid-rises.
+    - This falls apart for many asian cities?
+    - Building codes, rising land costs, consolidation (barriers to entry) and cost-cutting via plan reuse.
+  - Cars
+    - Aerodynamic tests & sharing platforms (sounds like more consolidation)
+    - Colors are converging too, but it's unclear why.
+    - Logos
+  - People
+    - Convergence of "Instagram Faces".
+    - Injectable treatments are on the rise, while they're cheaper and more available.
+    - Again, this sounds like shared aesthetics from global culture. These are learned to a large extent.
+    - Seems to me like it's a capitalism chokepoint: instagram. The algorithms have huge effects here on seeing & driving culture.
+  - Media
+    - Testing averages everything out: anything interesting is probably polarizing.
+    - % of prequels/sequels within top-grossing movies has been rising from 25% in 2000 to ~100% in 2021.
+    - Book cover examples: everything is "not giving a fuck" or "fuck yeah".
+      - Seems like selection bias.
+    - Best-selling video games are nearly 100% franchises since 2005
+      - Counterargument: indie games are on the rise (https://www.liquidweb.com/insights/video-game-statistics/#anchor7 , https://www.statista.com/chart/27207/percentage-point-change-in-the-share-of-us-gamers-saying-they-played-selected-game-genre/ )
+  - Brands
+    - Advertisements look the same, argues brands draw from the same reference images online.
+    - Same palette of plain/pastel branding, claims tech has led the way
+
+Conclusion: "people's choice" creates sameness and being bold is an opportunity.
+
+
+Thoughts:
+In short, it sounds like consolidation and global culture due to more rapid information exchange (internet).
+Overall left with "maybe?"
+- Familiarity for an increasingly globetrotting populace is worth something
+- Purely efficiency or shared global culture? We had microcosms previously due to slower information spread.
+- Increasing wealth concentration might be driving some of the efficiency / cost-conscious convergence.
+  - Architectural plan reuse sounds like a side-effect of consolidation (segue into late-stage capitalism discussion)
+- Testing averaging: room for disruption? Seems like the bland sameness should result in novel content being promoted/vaunted?
+
+
+# 
+Beliefs about the state of software systems aren't true unless they're enforced as 
+**behaviors**
+  * Observed behaviors are in logs, metrics, dashboards, etc.
+  * Tracked behaviors inform you when they change after a SW update; e.g. latency increases.
+  * Verified behaviors are consistently true because there is a timely mechanism that ensures them before deployment, like (end-to-end integration, performance, and load) tests, fault injection triggering failure modes.
+or **properties** of the system.
+  * Intended properties are "best effort" through training, docs, etc
+  * Tracked properties are reported on but not enforced.
+  * Asserted properties are enforced before deploying.
+
+Coming back to your Post-Apocalyptic software: how do you regain the confidence to make changes? List out all the beliefs that you’d need to have in order to be confident in modifying your software, and then for each belief an approach for evolving it up the belief and property ladder.
+
+
+
+# [AOSA: ZeroMQ](https://aosabook.org/en/v2/zeromq.html)
+- Conceived as messaging for stock trading--lots of benchmarking and optimization.
+## Library vs Application
+- ZMQ is a library supporting a fully-distributed architecture due to concerns with typical "smart broker, dumb clients" architecture
+    - Performance: broker inevitably becomes bottleneck
+    - Large-scale deployments: no company wants to give control to a server in another company (secrets & liability), results in a lot of messaging bridges
+- Library model has been a boon as users perceive lower adoption & operational costs
+
+## Global State
+- Don't do it. Other libraries might themselves use ZMQ, which creates race conditions and havoc.
+- ZMQ library requires a "context" object which maintains worker threads, state storage, etc
+
+## Performance
+- Throughput and latency are top concerns but the relationship isn't obvious.
+    - Recommendation to read up on [Queueing Theory](https://en.wikipedia.org/wiki/Queueing_theory)
+- Sender vs receiver throughput are different, averages can be misleading (see e.g. SLI monitoring in The SRE Book)
+- Lesson: "Make it fast" isn't a simple charter. Know precisely what you're solving.
+
+## Critical Path
+- mallocs, syscalls, and the concurrency model have the biggest impact on performance.
+- Lesson: Optimize things that happen often--the "critical path" (here that's _sending the damn messages_)
+
+## Allocating Memory
+- Only one allocation during message send: the message itself.
+- For small messages, copying is cheaper than allocation, so preallocate.
+- For large messages, copying is expensive, so allocate once and pass a pointer! ("zero-copy")
+    - Ref [Goglin 2008](https://inria.hal.science/file/index/docid/292831/filename/Open-MX-IOAT.pdf)
+- ZMQ message repr is an opaque handle, small messages stored directly in the handle while large messages are reference counted.
+- Lesson: there may be several subclasses of a problem you're trying to solve, each with an optimal algorithm.
+
+## Batching
+- Syscalls can become bottlenecks with sufficiently high throughput (cost to traverse the stack, context switch, etc)
+- Can tradeoff latency for throughput by batching (see also [Nagle's Algorithm](https://en.wikipedia.org/wiki/Nagle%27s_algorithm), [Interrupt coalescing](https://en.wikipedia.org/wiki/Interrupt_coalescing))
+- ZMQ dynamically adjusts: no batching when message sending is sparse.
+    - As the message rate grows, messages begin to get queued, so batching is switched on.
+- Lesson: optimal throughput and response time means no batching. As data arrives faster than it can be processed, start batching.
+
+## Architecture Overview
+```
+network
+============================
+worker thread   +---------+
+                | engine  |
++----------+    +---------+
+| listener |--->| session |
++----------+    +---------+
+     |            |   ^|
+     |            |   |v
+     |            |  Pipes
+     |            |   ^|
+=====|============|===||====
+     |            |   |v
++-------------------------+
+|         socket          |
++-------------------------+
+            |
+           API
+application thread
+```
+- User interacts with ZMQ based on user-thread-local socket abstraction
+- Objects are all owned by a socket (sometimes transitively), this ownership tree is used in shutdown (kill the kids first or whatever)
+- Two kinds of objects: those involved in message passing (usually connection management, e.g. creating a TCP engine/session fo each new connection) and those not (usually responsible for data transfer, e.g. engines for protocols like TCP, IPC, PGM, etc)
+
+## Concurrency Model
+- Classic threading constructs (critical sections, semaphores, etc) can be slower than a single-threaded version due to waits and context switches.
+- Actor Model: avoid locking and pass asynchronous messages between threads.
+- Limiting to one thread per physical core means no context switching, no critical sections, mutexes, &c. No CPU migration mitigates cache pollution.
+- Sharing worker thread among objects means scheduler-based cooperative multitasking
+    - No blocking ops, because this would block every object sharing the thread => all objects are state machines.
+    - Shutting down a fully async system is tough (30-50% of the reported bugs)!
+- Lesson: actor model is almost the only pattern for such performance and scale, but without specialized system it's a lot of hard infrastructure code. Think about shutdown from day 1.
+
+## Lock-Free Algorithms
+- "Lock-Free" really means using hardware atomics to push locking down the stack.
+    - Atomic operations can be expensive, esp with multi-core systems.
+- Queues have a single reader and writer thread to prevent synchronization issues within a queue.
+- Batching helps solve the atomic perf penalty: read or write all the available messages at once, use "pre-write" and "pre-read" staging areas.
+    - A writer flush or reader fetch operation is implemented with a single pointer move.
+- Lesson: don't reinvent the (lock-free algorithm) wheel, and batch intelligently for performance.
+
+## API
+- "It's [the user interface] the only part of your program visible to the outside world and if you get it wrong the world will hate you."
+- Migration from AMQP model to BSD Socket API (probably) caused adoption to soar.
+    - This is a entrenched, stable, and familiar API! Users have a mental model of it.
+    - API changed product perception! Went from "complex infrastructure" to "a simple library that helps me send messages from A to B"
+- Lesson: Reuse and learn from everything you can--ideas, APIs, conceptual frameworks, etc. Leverage other industry experience and let users leverage theirs.
+
+## Messaging Patterns
+- Two approaches to solve the central problem of specifying which messages are routed where
+    - 1. "Do one thing and do it well" (Unix philosophy)--restrict the problem domain, something like [MQTT](http://mqtt.org/)
+    - 2. Focus on generality to provide a powerful and configurable system (AMQP approach)
+- ZMQ does the former, supports patterns like pubsub, request/reply, parallelized pipeline.
+- Generally: abstract the stack into layers to deal with problem areas (transport/routing/presentation/etc), and provide multiple non-intersecting layer implementations for each use case.
+    - Analogous to TCP / UDP transport layer implementations
+- Lesson: monolithic solutions may not be the best path, consider redefining the problem area as a layer and providing implementations for each use case.
+
+
+# (Handling Eventual Consistency)[https://medium.com/@hugo.oliveira.rocha/handling-eventual-consistency-11324324aec4#69f5]
+## Patterns
+"Bee pattern" as events carrying enough context
