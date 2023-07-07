@@ -355,4 +355,6 @@ application thread
 
 # (Handling Eventual Consistency)[https://medium.com/@hugo.oliveira.rocha/handling-eventual-consistency-11324324aec4#69f5]
 ## Patterns
-"Bee pattern" as events carrying enough context
+"Town Crier" events: the naive approach of shouting what happened to everyone else (notify)
+
+"Bee pattern" as events carrying enough context, similar to Town Crier
