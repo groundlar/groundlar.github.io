@@ -353,7 +353,155 @@ application thread
 - Lesson: monolithic solutions may not be the best path, consider redefining the problem area as a layer and providing implementations for each use case.
 
 
-# (Handling Eventual Consistency)[https://medium.com/@hugo.oliveira.rocha/handling-eventual-consistency-11324324aec4#69f5]
+# [AOSA nginx](https://aosabook.org/en/v2/nginx.html)
+# High Concurrency / Motivating Examples
+Apache example: connection << page size
+- have to hold connection context open (>1MB)
+- doesn't scale--architected to spawn a copy for each connection
+
+nginx aimed at C10K
+- event based
+- originally deployed alongside apache for static content
+- nginx abstractions allow pushing features to edge server (concurrency, latency processing, SSL, static content, compression, caching, connection and throttling)
+- 2004, BSD
+
+# Overview of nginx
+process- or thread-based connection concurrency with blocking IO can use a lot of RAM & CPU
+- each thread/process requires a new runtime env (heap, stack, exec context), this requires CPU and context switching (--> thrashing)
+- nginx prefers single-threaded, non-blocking eventing
+- lots of mux and event notifications, delegates tasks to separate dedicated processes, each "worker" process can process many K's of concurrent connections
+
+## Code Structure
+modular structure allows extension
+- core/event modules, phase handlers, protocols, variable handlers, filters, upstreams, load balancers (all build-time as of writing ca 2012)
+
+### Workers Model
+master processs spawns workers which communicate to the backend (web/app server, memcached/redis)
+- workers execute a "core run-loop" using asynchronous task handling
+- workers share a "listen" socket
+- each worker relies on kevent/epoll/select and sendfile/AIO/mmap
+- workers are reused, no create-destroy pattern, each handling K's of connections
+- worker instance count is adjustable (e.g. # of CPU cores, higher for IO bound, etc)
+- challenges: disk RW optimizations ongoing, limited support for embedded scripting (can't block or exit unexpectedly)
+
+### nginx Process Roles
+Master, workers, cache loader, cache manager (all single-threaded in v1.x), SHM for IPC, only master runs as root.
+
+Master
+- reads & validates config
+- creates, binds, closes sockets
+- starts, maintains, terminates desired # of worker procs
+- reconfigures service w/o interruption
+- controlls non-stop binary upgrades
+- opens/re-opens log files
+- compiles embedded perl scripts
+
+Workers accept, handle, process connections, provide rev proxy & filtering, plus "most other tasks".
+
+Cache loader/manager handle population/expiration, respectively.
+
+
+
+### Caching overview
+Hierarchical data storage in fs
+- Configurable cache keys, request-specific params can control cache content
+- Keys and metadata are stored in SHM segments accessed by loader, manager, and workers
+- (v1.x) no in-memory caching above OS level
+  - Each cached response lives in a separate file (derived from MD5 of proxy URL)
+- processed/finished request is moved to a cache directory, can purge via deletes
+
+
+# nginx Config
+plain text at (/usr/local)/etc/nginx.conf, can modularize into files, master reads and sends RO compiled form to workers.
+- organized into non-overlapping main/http/server/upstream/location/mail context directives
+- variables allow runtime config, evaluated on-demand and valid for a request's lifetime
+- `try_files` used to match URI->content mappings as a replacement for `if` conditionals
+
+# nginx Internals
+Most protocol- and application-specific features handled by modules, not core
+- Connections flow through a module pipeline, usually w/ FastCGI, uwsgi or memcached
+- Types: event modules, phase handlers, output filters, variable handlers, protocols, upstreams, load balancers
+  - event modules provide OS-dependent notifications (kqueue/epoll)
+  - protocols allow for HTTPS, TLS/SSL, SMTP, POP3, IMAP
+
+Typical request lifetime:
+1. Client sends HTTP request
+2. nginx core chooses phase handler based on configured location match for request
+3. LB picks server, if applicable
+4. Phase handler passes output buffer to first filter
+5. Chained filters do their thing
+6. Final response is sent.
+
+WIP: Extreme customizability places large burden on module programmers.
+- modules can attach in tons of places
+  - before conf read, upon conf init, server host init, server conf & main conf merge, location conf init or merge with parent server, master process start/exit, worker process start/exit, request handling, ...
+
+### NOTE(me) this section begins to get confused. There is too much detail without structure/connections between concepts
+
+Inside a worker (run-loop is step 5 & 6)
+1. Begin `ngx_worker_process_cycle()`
+2. Process events (epoll/kqueue)
+3. Accept events, dispatch actions
+4. Process/proxy header and body
+5. Generate response header & body, stream to client
+6. Finalize request
+7. Re-init timers and events
+
+Processing a request involves processing the header and body, then calling a handler which runs through processing phases.
+- Each phase has handlers which process a request and produce relevant output
+- Handlers attached at conf-specified locations
+- Generally phase handlers either get location configuration, generate a response, send the header, or send the body.
+  - Each takes a single "request" structure arg
+
+If a virtual server is used, there are six phases
+1. server rewrite
+2. location
+3. location rewrite (may go back to #2)
+4. access control
+5. `try_files`
+6. log
+
+Depending on location conf, nginx tries a variety of content handlers (perl, proxy_pass, flv, mp4, random index, index, autoindex, gzip_static, static).
+- Filter chains run after content handlers (possibly many filters for a single location)
+  - header filters and body filters
+  - body filters transform the generated content
+    - e.g. server-side includes, xslt, image filtering/resizing, charset modifications, gzip, chunked encoding, ...
+
+After filter chain is the writer.
+- this has `copy` and `postpone` filters for caching and subrequests
+- filters can coalesce subrequests into a single response, these can be nested and hierarchical, each maps to a file on disk, other handlers, or upstream servers.
+  - commonly used to insert additonal content based on data in response (e.g. include->content, appending)
+
+Upstreams implement content handlers as a reverse proxy (`proxy_pass` handler).
+- Prepare request to be sent to an upstream server ("backend"), receive response
+- no calls to output filters, uses a set of callbacks
+  - e..g create request buffer, reinit connection to upstream, processing received payload, aborting requests, finalizing requests, trimming responses, ...
+
+LBs attach to `proxy_pass` handler, allow choosing upstream server (round-robin or ip-hash)
+- LBs and upstream handlers include upstream failure detection & re-routing
+
+`geo` and `map` modules allow IP tracking and variable->variable mapping (e.g. flexible hostname and other runtime variables)
+
+Memory management
+- Resources allocated for lifetime of connection, prefer pointers to memcpy
+- A module's response is emplaced in buffer added to a "buffer chain link," subsequent processing uses this same link.
+- "Buffer chains are complicated in nginx"
+  - e.g. body filter can only operate on one buffer (=="chain link") at a time, must decide overwrite/replace/insert.
+  - Sometimes module will receive incomplete buffer chains (what? why?)
+- Pool allocator manages memory.
+  - SHM for mutex, cache metadata, SSL session cache, bandwidth limits.
+  - Slab allocator for SHM allocation
+  - Mutex, semaphore, R-B trees provided.
+    - Docs lacking, most reverse-engineered.
+
+# Lessons Learned
+"Always room for improvement": most of Internet backbone existed prior to nginx
+
+"Development should be focused": probably shouldn't have written a Windows version.
+
+Modules and extensions crucial to adoption/popularity.  
+
+# [Handling Eventual Consistency](https://medium.com/@hugo.oliveira.rocha/handling-eventual-consistency-11324324aec4#69f5)
 ## Patterns
 "Town Crier" events: the naive approach of shouting what happened to everyone else (notify)
 
