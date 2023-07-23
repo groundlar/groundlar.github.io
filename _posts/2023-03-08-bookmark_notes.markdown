@@ -506,3 +506,117 @@ Modules and extensions crucial to adoption/popularity.
 "Town Crier" events: the naive approach of shouting what happened to everyone else (notify)
 
 "Bee pattern" as events carrying enough context, similar to Town Crier
+
+
+# [Figma scaling to multiple DBs](https://www.figma.com/blog/how-figma-scaled-to-multiple-databases/)
+2020 bottleneck (moar features & 3x users, 2nd product), using single L AWS RDS instance,  >65% CPU usage on peak
+Infra team solves problems before they cause outages, need to maintain velocity & uptime.
+  - Not-so-subtle cultural note here: performance is a pillar of Figma (realtime use cases are existential features).
+## Maximize runway
+Plan:
+  - upgrade to biggest instance
+  - add read replicas
+  - add new DBs to limit growth of old DB
+  - Add PgBouncer connection pool (currently 1k+ connections)
+
+## Other options
+- NoSQL or Vitess migration complicated (read & write migration) with potential app changes
+- NewSQL too new (early adopter tax)
+- Decided to vertically partition (move tables or columns out)
+
+### Partitioning
+- Prioritization via Impact (AAS/workload change) and Isolation (not coupled to other tables)
+    - Isolation is hard to measure, have to analyze queries and determine where you can sacrifice the ability to execute atomically.
+    - ActiveRecord doesn't help with static analysis, so added runtime validators to emit prod query & transaction data
+        - Use this info to identify clusters of tables
+
+### Managing Migration
+1. Limit potential availability impact to <1 minute
+1. Automate the procedure so it is easily repeatable
+1. Have the ability to undo a recent partition
+
+### Bespoke Solution
+1. Prepare client applications to query from multiple database partitions
+1. Replicate tables from original database to a new database until replication lag is near 0
+1. Pause activity on original database
+1. Wait for databases to synchronize
+1. Reroute query traffic to the new database
+1. Resume activity
+
+How does PgBouncer handle read/write replicas?
+    
+### The critical steps
+- Not sure I follow why 2 PgBouncer instances are necessary given that they're already relying on the ability to dynamically swap the backing DB? Maybe extra layer of protection?
+- Reverse replication is interesting.
+
+
+
+# Data Oriented Programming
+I originally ran across Yehonathan and the idea on The Changelog podcast, and disagreed pretty wholeheartedly.
+However, they seemed passionate and enamored with the idea, respectively, so I decided to give it a deeper look, with the expectation of either becoming a convert or galvanizing my convictions.
+
+This led me to [Expression Problem](https://eli.thegreenplace.net/2016/the-expression-problem-and-its-solutions/), which shows the difficulty in OOP--adding a new type is easy, adding new operations to a base class is hard (reimplement for all subclasses) or FP--adding a new type is hard (modify all existing functions to handle), adding new operations is easy.
+  - Visitor pattern in OOP flips this (adding new types is hard since you have to update a base Visitor iface and implement everywhere), by representing operations as classes (e.g. `class Evaluator : ExprVisitor` or `class Stringifier : ExprVisitor`) .
+
+- [ ] TODO: finish reading article for more generic solutions.
+
+## [Principle 2: Generic Data Structures](https://blog.klipse.tech/databook/2022/06/22/generic-data-structures.html)
+- Let you leverage more functionality (usu built-in) to operate on data class
+- "flexible" data model: you don't have to have strict types for each new perturbation of data shape
+    - Sounds like a big ball of mud to me.
+    - Strawman of "AuthorData" vs "AuthorDataWithFullName"
+        - Reeks of the duck typing python "fun": you end up having to verify presence everywhere because you can make no assumptions, this is schema-on-read to the extreme
+    - Called out in Cost #2: No Data Schema and Cost #3: No compile-time check that the data is valid
+    - "impose the need to manually document the shape of data because the compiler cannot validate it statically"
+        - This seems like a bad trade: you're adding a human problem by removing a computer problem--you need to remember to add validators everywhere (maybe AOP helps?) by throwing away type systems.
+
+## [Principle 3: Data is Immutable](https://blog.klipse.tech/databook/2022/06/22/immutable-data.html)
+- In many languages, mutating the field of a map referenced in multiple places updates all of them (pointer-like behavior). Naive cloning is inefficient, efficient immutability often requires 3p libraries.
+- Gives you consistent read behavior, easy equality checks (reference comparison). Concurrency safety?
+- "Data access to all with confidence" already exists with static values / RO refs. Sure, these exist for a reason.
+- Predictable code behavior
+    - Contrived example of capture-by-reference in a callback printing a value modified elsewhere.
+    - Alternative models include ownership, pass-by-copy, (&c?)
+- Fast equality checks (compare ref)
+- Free concurrency safety.
+    - You don't need locks or mutexes if everyone can only copy. I don't know that this is "free" -- the cost *is  adopting the immutability pattern*!
+- Costs: performance, extra library for persisted data (without native uspport it's dificult to enforce availability)
+
+
+## [Principle 4: Separate Data Schema from Data Representation](https://blog.klipse.tech/databook/2022/06/22/data-validation.html)
+
+Request example:
+- `(firstName: str, lastName: str, optional books: int)`
+    - Use JSON schma to represent this with a map, e.g. `"firstName": {"type": "string"}`
+    - Validate on the fly (e.g. Ajv)
+
+Touted benefits:
+- "Allows developers to decide which pieces of data should have a schema and which pieces of data should not."
+    - Prototyping use case makes sense: want a way to send data quickly and iterate.
+        - I'm not convinced this is a net benefit for anything larger than toy projects. I've never seen a team *actually* redress data interfaces once a working prototype is built.
+        - "Being forced to update the class definition each time the model changes slows us down" is strictly true, but in practice this is a neglible amount of time, so a very minor velocity boost in the short term (and arguably never in the long term.
+    - Code refactoring
+        - Claim you don't have to validate in inner functions, because it's been validated at an outer function.
+            - This example breaks the touted benefit of reusable functions applicable on generic data types: you're assuming what structure the data has in the inner function. This function is either not reusable, or needs validation.
+            - This results in repeated validation code, but things like AOP might save you here.
+                - Or encapsulating your data validations into an object (sacrilege!)
+- Optional fields
+    - This isn't unique to DOP: any sane IDL provides this (Thrift, Protobuf, Avro...)
+- Advanced data validation conditions
+    - This section is just shilling JSON Schema.
+        - To be fair, it *is* a nice library.
+    - We can define arbitrarily "advanced" runtime validations for any data.
+- Automatic generation of data model visualization.
+    - This is a benefit of _having a schema_!
+        - The notion that generating UML diagrams from a schema is somehow unique to this set of technologies (JSON Schema) or DOP is absurd. The graphic for this section is a literal class diagram.
+
+
+## Criticisms
+- Any trade of a build-time/static check for a runtime check is inherently suspect. The only time runtime checks are unavoidable is when dealing with external (or user-provided) data.
+    - This necessitates a robust testing culture, so we end up trading a machine problem for a human one.
+    - It's my view that the sort of culture which obsesses over having to modify a data definition while prototyping will struggle to justify time spent on exhaustive test coverage--this inarguably slows down prototyping.
+        - Add in organizational friction (it works, so why spend more time "hardening" something that's "just fine") and it's very likely you'll end up with untested, vulnerable code.
+- Lots of the content is either thinly-veiled JSON Schema advertisemtents or presenting ubiquitous capabilities as somehow unique to DOP (e.g. generating UML diagrams, runtime validations).
+- It's safe to say that the "more flexible typing" experiment conducted by javascript and Python has led to the creation of things like Typescript and Python 3 type annotations.
+    - Have you ever tried to refactor a method without type annotations? The only way to figure out what data is available is to inspect at runtime, or hope that the last maintainer put enough validations in to allow inference.
+
