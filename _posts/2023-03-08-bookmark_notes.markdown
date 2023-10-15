@@ -63,6 +63,82 @@ Performance is an aspect of system mastery (like SRE/DevOps/Observability), an i
     1. Have you gotten a mixed discipline group of senior folks together and thrashed out each of the above points? Where is that documented?
 
 
+## [Follow the Denotation](https://reasonablypolymorphic.com/blog/follow-the-denotation/)
+What do these do?
+
+    ```haskell
+    empathy :: r -> f -> X r f -> X r f
+    -- Takes r, f, something with r,f and returns a something. Looks maybe like an update?
+    fear    :: e -> X e m -> Either () m
+    -- Takes e, something with e,m, maybe gives an m. Possibly a query?
+    taste   :: X o i -> X o i -> X o i
+    -- Takes two somethings with o, i, returns another something. Possibly an update? Merge?
+    zoo     :: X z x
+    -- Looks like an empty.
+    ```
+    These rigorously define the behavior of a Map-like object.
+
+    Whereas the _names_ tell you what the fuck is going on:
+    ```haskell
+    -- get back what you put in
+    lookup k   (insert k v m) = Just v
+
+    -- keys replace one another
+    insert k b (insert k a m) = insert k b m
+
+    -- empty is an identity for union
+    union empty m = m
+    union m empty = m
+
+    -- union is just repeated inserts
+    insert k v m = union (insert k v empty) m
+    ```
+    They are "meaning functors" under either name.
+
+    If we reduce Map to the "purest possible" functions, we shouldn't be able to tell the difference
+    between that and any implementation.
+    ```
+    -- With the meaning of our type nailed down
+    μ(Map k v) = k -> Maybe v
+
+
+    -- Empty map assigns Nothing to everything.
+    μ(empty) = \k -> Nothing
+
+
+    -- Looking up a key in the map is just giving back the value at that key.
+    μ(lookup k m) = μ(m) k
+
+
+    -- Give back the value just inserted.
+    μ(insert k' v m) = \k ->
+      if k == k'
+        then Just v
+        else μ(m) k
+
+    -- Lookup on left first.
+    μ(union m1 m2) = \k ->
+      case μ(m1) k of
+        Just v  -> Just v
+        Nothing -> μ(m2) k
+    ```
+    Our map must be _isomorphic_ to this definition. But wait:
+    ```
+    -- The "obvious" Monoid definition for Map
+    instance Monoid (Map k v) where
+    mempty  = empty
+    mappend = union
+
+    -- What we get from the above "meaning functors" doesn't match:
+    instance Monoid v => Monoid (k -> Maybe v) where
+    ```
+
+
+## [Making The World's Fastest Website](https://dev.to/tigt/making-the-worlds-fastest-website-and-other-mistakes-56na)
+Consultant for Kroger's bloated jabbascript site.
+
+### Streamed HTML
+
 
 ## [What Is ChatGPT Doing... and Why Does It Work?](https://writings.stephenwolfram.com/2023/02/what-is-chatgpt-doing-and-why-does-it-work/)
 - Probabilistically adds one token (word or part of word) at a time, by attempting to "match in meaning".
@@ -620,3 +696,84 @@ Touted benefits:
 - It's safe to say that the "more flexible typing" experiment conducted by javascript and Python has led to the creation of things like Typescript and Python 3 type annotations.
     - Have you ever tried to refactor a method without type annotations? The only way to figure out what data is available is to inspect at runtime, or hope that the last maintainer put enough validations in to allow inference.
 
+
+
+# [Delivering on an Architecture Strategy](https://blog.thepete.net/blog/2019/12/09/delivering-on-an-architecture-strategy/)
+
+Balance between Product and Architecture visions and prioritizations.
+
+- Need to prioritize backlog appropriately between new feature work and the architectural underpinnings of the (product) feature platform.
+    - If PMs don't understand the technical vision, arch improvement doesn't happen.
+- Assertion that managing tech & product work with a single backlog is better than reserving capacity for "tech debt" or creating teams for new architectural projects.
+
+## Achieving a balanced backlog
+- Most natural for teams with long-term ownership of verticals, this gives time to build trust between product & eng.
+- Empower autonomous teams with enough context (avoid prescribing solutions, resulting in XY problem, link to [Mission Command Post](https://blog.thepete.net/blog/2019/02/08/mission-command-enabling-autonomous-software-teams/)) to understand the broader goal and decide (pivot) accordingly
+  - Empowerment while hiding context will result in misalignment (dinner party example -- "free to bring another dish" without sharing "we need a vegetarian dish")
+
+## Connect technical work to buisiness outcomes
+- Strategy ("accelerate deployments") is too broad for engineers to act on, an Architectural Initiative is the in-between.
+    - e.g. "fully automated delivery pipeline" and "shared test automation platform" initiatives help achieve the acceleration strategy.
+    - Biz goal -> tech strategy -> arch initiative
+        - e.g. "broaden TAM by launching 2 products in 18 mo" -> "extract shared service platform from current product" -> "extract user accounts mgmt and UI framework"
+
+## Strategic Architectural Initiatives
+- Format: Target State, Current State, Next Steps
+    - Duh? This is just Goals / Background / Proposal from D/TDocs
+    - This helps utilize both "Doers" and "Dreamers", highlighting the gaps.
+
+
+# [Uber Up Microservices](https://www.uber.com/blog/up-portable-microservices-ready-for-the-cloud/)
+- Start with manual config for services, allow fast inter-service calls within a Zone.
+- Transitioning to cloud-first, this doesn't fly.
+    - Add linter rules and auto-detection of hardcoded zone info.
+    - Perpetual continuous migration for regression testing.
+
+## Up Layers
+- Experience: UI direct control, CD/deploy automation, Balancer moving workloads, auto scaling.
+- Platform: abstractions used by experience layer like service & service abstractions (constraints on machines, region, etc)
+- Federation: integration to compute clusters, organizes clusters by capability and physical location, handles e.g. rebalance requests by moving clusters with canaries and monitoring 
+- Regions: physical zones with kubernetes & peloton clusters, external to Up
+
+## Impact
+- 2 years of development followed by 2 years of work to migrate 4k services.
+- Mostly automated migration allowed focusing on hard use cases (Note: jives with https://lethain.com/migrations/)
+- "Returned 10s of MM to biz by autoscaling and efficiency, 10s of K eng hours by manual service updates."
+    - One would hope so: team of 10 for 2 years is 36k hours.
+
+## Next
+- Move to cloud
+- Automate CD with more checks and tests, increase security & library "freshness"
+- Deploy Safety (moar automation & automated tests)
+    - "Existing data shows that quite a substantial number of incidents we observe are related to code and configuration changes."
+        - Candidate for most banal sentence in engineering history.
+- Platform
+    - Better dependency & interaction modeling, increased observability
+
+## Summary
+We moved shit to the cloud, we had to remove hardcoded zone information & assumptions.
+Deploys and testing were a heterogeneous clusterfuck, now that's centrally managed.
+Microservice interactions and completely independent teams (w/o shared platform) are impossible to monitor and control.
+
+
+# [Pinecone: What is a Vector Database](https://www.pinecone.io/learn/vector-database/)
+Similarity queries on vectors
+
+- Random projection (mult against NxM random matrix => 1xN -> 1xM)
+- Product Quantization: split vector into smaller vectors, assign each to nearest k-means center
+- Locality-sensitive hashing: bucket by hash and search within bucket
+- Hierarchical Navigable Small World
+    - Is this just B+ trees for vectors?
+    - cluster (e.g. k-means), edges between clusters are generated with some similarity metric
+
+Similarity measures
+- Cosine similarity (angle between vectors)
+- Euclidean (straight line distance)
+- Dot product (product of magnitude and cosine of angle)
+
+Filtering
+- vector + metadata indices, apply meta filter to pre- or post-topk search
+
+DB Ops
+- perf and fault tolerance, sharding/partitioning, replication/fault tolerance/consistency
+- blah, blah
