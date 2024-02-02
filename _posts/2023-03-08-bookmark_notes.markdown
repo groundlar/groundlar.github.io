@@ -777,3 +777,38 @@ Filtering
 DB Ops
 - perf and fault tolerance, sharding/partitioning, replication/fault tolerance/consistency
 - blah, blah
+
+
+
+
+# [Wix: Event Driven Architecture — 5 Pitfalls to Avoid](https://medium.com/wix-engineering/event-driven-architecture-5-pitfalls-to-avoid-b3ebf885bdb1)
+1. Atomicity. E.g. write to DB and fire event
+    - Resilient producers with retry via [Greyhound, built on Kafka](https://github.com/wix/greyhound#greyhound) ("durable execution" reminds me of Temporal's Durable Execution [SE Radio podcast](https://se-radio.net/2023/12/se-radio-596-maxim-fateev-on-durable-execution-with-temporal/)
+        - Doesn't guarantee ordering
+    - [Debezium](https://debezium.io/documentation/reference/stable/architecture.html) sends CDC to Kafka
+        - CDC log guarantees ordering
+2. Event Sourcing is often disadvantageous.
+    - Problems:
+        - Performance means snapshotting
+        - Hard to create global libraries for snapshotting and read optimizations
+        - Eventual consistency.
+    - CRUD+CDC as an alternative.
+        - Each service can expose state via an API
+        - Optionally create its own stream of event changes (more refined/less granular than all of its input events)
+3. No Context Propagation
+    - Tracking events through system is "fun" (no explicit chain of requests)
+    - This is basically [Correlation Identifiers](https://www.enterpriseintegrationpatterns.com/ramblings/09_correlation.html) all over again.
+4. Large Payloads
+    - Big blobs (Images, videos, etc) may spike latency & compute
+    - Compression, chunking, or ref passing can mitigate
+        - Pulsar has chunking OTS
+    - Duh?
+5. Duplicate Events
+    - Idempotentcy is important
+    - Use identifiers in consumers
+    - Recommendation of optimistic locking
+        - Could be combined with various dedupe strategies (refuse delivery, cache, blacklist)
+
+Final strong recommendation for streaming CDC events to solve #1 and #2
+
+
