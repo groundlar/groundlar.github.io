@@ -578,6 +578,7 @@ Memory management
 Modules and extensions crucial to adoption/popularity.  
 
 # [Handling Eventual Consistency](https://medium.com/@hugo.oliveira.rocha/handling-eventual-consistency-11324324aec4#69f5)
+
 ## Patterns
 "Town Crier" events: the naive approach of shouting what happened to everyone else (notify)
 
@@ -588,6 +589,7 @@ Modules and extensions crucial to adoption/popularity.
 2020 bottleneck (moar features & 3x users, 2nd product), using single L AWS RDS instance,  >65% CPU usage on peak
 Infra team solves problems before they cause outages, need to maintain velocity & uptime.
   - Not-so-subtle cultural note here: performance is a pillar of Figma (realtime use cases are existential features).
+
 ## Maximize runway
 Plan:
   - upgrade to biggest instance
