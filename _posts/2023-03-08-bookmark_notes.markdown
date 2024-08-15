@@ -814,3 +814,117 @@ DB Ops
 Final strong recommendation for streaming CDC events to solve #1 and #2
 
 
+
+# [Segcache: a memory-efficient and scalable in-memory key-value cache for small objects](https://www.usenix.org/conference/nsdi21/presentation/yang-juncheng)
+## tl;dr
+Shove objects with similar TTLs in buckets, share metadata within bucket, expire entire buckets; this causes (tolerable) early expiry. Buckets have exponentially wider TTL windows to support broad lifetimes.
+
+Garbage explanation of eviction algorithm, but uses a LFU approximate counter to save memory on frequently used items, caps update frequency to smooth bursts.
+
+In conjunction with reduced metadata bookkeeping, single-writer/multi-reader threading model with update frequency caps dramatically improves thread scalability (update frequency cap reduces locking).
+
+## Paper
+1. group objects with similar create/expiration time into segments
+2. approximate some metadata, put most into shared segment headers to reduce metadata overhead
+3. segment-level bulk expiration and eviction with small critical sections
+
+Prior work largely focuses on miss ratios (eviction algos) or throughtput, this focuses on efficiency for 10-1k B objects; Redis/Memcache have 50B overhead/object. Proactive expiration often has high overhead. Allocation with malloc causes external framentation, slab internal and "slab calcification" (slabs stuck with certain class of objects due to sizing constraints when reallocation isn't allowed).
+
+Log structures reduce fragmentation, memshare uses small log "segments" for partitioning between tenants but migration and per-tenant compute is expensive.
+
+Q: does segcache do multi-tenant? If not, just use memshare with 1 tenant?
+
+Segcache is TTL-indexed, dynamically partitioned, segment structured cache; objects with similar TTL stored together in segments (reducing metadata size, ~5B/object), it evicts by merging segments and retaining the "most important objects". Time sorted, TTL-indexed segment chains allow for (novel!) efficient removal immediately after expiry.
+
+- Single pass, merge-based eviction algorithm.
+    - approximate and smoothed freq counter to balance high value retention and eviction
+- "macro management strategy", doing batched bookkeeping
+
+
+### Background
+TTLs used variously to limit data inconsistency, prompt recomputation, implicit deletion, and comply with privacy laws.
+- Lazy expiration (delete on access) increases memory footprint
+- Proactive expiration is often expensive.
+    - Memcached checks set number of LRU entries at the tail and removes expired entries, but locking makes this scale poorly, can be delayed given huge LRU entry count.
+    - Transient object pools store objects with small TTLs separately, but choosing the TTL threshold is challenging with potential side effects.
+    - Full cache scan does what it says on the tin; expensive so usually infrequent.
+    - Redis does random sampling, continues sampling if proportion of expired objects in sample is above a threshold; inefficient by nature.
+
+
+TIL "cuckoo hashing": using multiple hash tables and pushing keys between them upon collisions (hash function generates different positions in each table).
+
+Memory fragmentation
+- External allocation (e.g. malloc) => external fragmentation and OOM
+- Slab allocation => internal fragmentation at the end of chunks and slabs, calcification if slabs can't get enough memory (especially problematic if slab class distribution changes over time)
+    - rebalancing between slabs can be expensive
+
+Throughput and scalability
+- Locking around LRU queues, free object queues, and hash table
+    - some use simpler eviction to remove locks (less memory efficient)
+    - some use opportunictic concurrency control (RIP write throughput)
+    - random eviction to avoid concurrency
+
+
+# Design principles:
+1. Proactive expiration: eagerly remove expired objects for mem savings
+2. Share metadata to amortize cost.
+3. Macro Management: operate on segments for bulk expire/evict with minimal locking
+
+
+3 Components: hash table for lookup, segmented object store, TTL-indexed buckets.
+
+### TTL buckets
+* For t_1 < t_2, all objects in range [t_1, t_2) are "approximated" at t_1 (possible early expiry), objects within each t_i bucket sorted by creation time.
+* Range: 1024 buckets, into 4 groups, bucket width grows by factor of 16 with each group.
+
+### Segments (Object Store)
+* Configurable size, each is treated like a mini-log and may house varied object types.
+    * No updates to objects once written (except incr/decr)
+* Each bucket stores pointers to head/tail of time-sorted chain.
+
+### Hash Table
+* Bulk-chaining hash table, which allocates one cache line (64B) as 8 slots in each hash bucket.
+    * | bucket info | object info x 6 | object OR pointer to next bucket
+        * Info slot houses 8b spin lock, 8b usage counter, 16b last-access timestamp, 32b cas value.
+        * Item slots have 24b segment ID, 20b segment offset, 8b frequency counter, 12b tag (hash used to reduce comparisons upon hash collisions)
+
+### Object Metadata
+* Shared in two places: hash table bucket and segment.
+    * segments share creation time, TTL, ref count
+        * TTL using oldest object
+    * buckets share access timestamp, spinlock, cas value, hash pointer
+* No object-level hash chain pointers b/c bulk chaining
+* No LRU chain pointers b/c expiry & evict at segment level
+* Hash-bucket-level cas value increases false data races within bucket, but neglible empirical impact (shared between a few keys)
+
+### Proactive Expiry
+* Within a segment, objects are ordered by creation time and share TTL => bulk removal
+    * BG thread scans, removes each expired segment.
+        * Metadata is consecutive (TTL array), so scanning is efficient
+    * Occasionally early expiry, maximum of bucket width, objects usually less useful near end of TTL in practice.
+
+
+### Segment Eviction
+* Caches must support eviction to make room for new objects, obv affects miss ratio
+* Segment-level, merge-based eviction algorithm
+* Merge first N consecutive, un-expired segments (Within TTL bucket), inherit the creation time of oldest evicted segment.
+    * Created segment inserted at same position as the evicted segments while maintaining time-sorted chain.
+    * Round-robin selection of TTL bucket
+* While merging N segments, uses a dynamic retention threshold, updated after 1/10 of a segment, tries to retain 1/N bytes of each segment.
+* Least Frequently Used eviction strategy is best under some assumptions
+    * Use `freq / size`, so needs freq counter with high accuracy for less-popular objects (evicting these affects miss ratio)
+    * _Approximate and Smoothed Frequency Counter (ASFC)_
+        1. Approximate: If freq < 16 (4b), increase by one on each request. Otherwise similar to Morris counter (order of magnitude / log frequency estimate)
+        2. Smooth: the last access timestamp rate-limits freq updates, at most 1/s; absorbs bursts.
+            * Traffic bursts can pollute naive LFU.
+    * Evictions reset ASFC counter, approximating window-based frequency.
+
+### Threading
+* Minimize crit sections, optimistic concurrency control, blah blah
+* Segment level reduces object-level bookkeeping (e.g. free-object queues)
+    * Reduces lock freq by 4 orders of magnitude(!)
+* Read path locksa at most 1/s for frequency update
+* Write path uses atomics with append-only store
+* Each thread maintains local view of *active* segments, only that thread can write.
+    * Segment removal requires locking, but object removal is lock-free
+
